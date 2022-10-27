@@ -26,8 +26,8 @@ def get_args_parser(add_help=True):
     parser.add_argument('--max-det', type=int, default=1000, help='maximal inferences per image.')
     parser.add_argument('--device', default='0', help='device to run our model i.e. 0 or 0,1,2,3 or cpu.')
     parser.add_argument('--save-txt', action='store_true', help='save results to *.txt.')
-    parser.add_argument('--save-img', action='store_false', help='save visuallized inference results.')
-    parser.add_argument('--save-dir', type=str, help='directory to save predictions in. See --save-txt.')
+    parser.add_argument('--save-img', action='store_true', help='save visuallized inference results.')
+    parser.add_argument('--save-dir', type=str, default=None, help='directory to save predictions in. See --save-txt.')
     parser.add_argument('--view-img', action='store_true', help='show inference results')
     parser.add_argument('--classes', nargs='+', type=int, help='filter by classes, e.g. --classes 0, or --classes 0 2 3.')
     parser.add_argument('--agnostic-nms', action='store_true', help='class-agnostic NMS.')
@@ -36,33 +36,19 @@ def get_args_parser(add_help=True):
     parser.add_argument('--hide-labels', default=False, action='store_true', help='hide labels.')
     parser.add_argument('--hide-conf', default=False, action='store_true', help='hide confidences.')
     parser.add_argument('--half', action='store_true', help='whether to use FP16 half-precision inference.')
-
+    # parser.add_argument('--batch_size', default=1, type=int, help='batch size')
+    parser.add_argument('--precision', default="float32", type=str, help='precision')
+    parser.add_argument('--channels_last', default=1, type=int, help='Use NHWC or not')
+    parser.add_argument('--profile', action='store_true', default=False, help='collect timeline')
+    parser.add_argument('--num_iter', default=1, type=int, help='test iterations')
+    parser.add_argument('--num_warmup', default=0, type=int, help='test warmup')
     args = parser.parse_args()
     LOGGER.info(args)
     return args
 
 
 @torch.no_grad()
-def run(weights=osp.join(ROOT, 'yolov6s.pt'),
-        source=osp.join(ROOT, 'data/images'),
-        yaml=None,
-        img_size=640,
-        conf_thres=0.4,
-        iou_thres=0.45,
-        max_det=1000,
-        device='',
-        save_txt=False,
-        save_img=True,
-        save_dir=None,
-        view_img=True,
-        classes=None,
-        agnostic_nms=False,
-        project=osp.join(ROOT, 'runs/inference'),
-        name='exp',
-        hide_labels=False,
-        hide_conf=False,
-        half=False,
-        ):
+def run(args=None):
     """ Inference process, supporting inference on one image file or directory which containing images.
     Args:
         weights: The path of model.pt, e.g. yolov6s.pt
@@ -85,30 +71,64 @@ def run(weights=osp.join(ROOT, 'yolov6s.pt'),
         half: Use FP16 half-precision inference, e.g. False
     """
     # create save dir
-    if save_dir is None:
-        save_dir = osp.join(project, name)
-        save_txt_path = osp.join(save_dir, 'labels')
+    if args.save_dir is None:
+        args.save_dir = osp.join(args.project, args.name)
+        save_txt_path = osp.join(args.save_dir, 'labels')
     else:
-        save_txt_path = save_dir
-    if (save_img or save_txt) and not osp.exists(save_dir):
-        os.makedirs(save_dir)
+        save_txt_path = args.save_dir
+    if (args.save_img or args.save_txt) and not osp.exists(args.save_dir):
+        os.makedirs(args.save_dir)
     else:
         LOGGER.warning('Save directory already existed')
-    if save_txt:
-        save_txt_path = osp.join(save_dir, 'labels')
+    if args.save_txt:
+        save_txt_path = osp.join(args.save_dir, 'labels')
         if not osp.exists(save_txt_path):
             os.makedirs(save_txt_path)
 
     # Inference
-    inferer = Inferer(source, weights, device, yaml, img_size, half)
-    inferer.infer(conf_thres, iou_thres, classes, agnostic_nms, max_det, save_dir, save_txt, save_img, hide_labels, hide_conf, view_img)
+    inferer = Inferer(args.source, args.weights, args.device, args.yaml, args.img_size, args.half)
+    if args.profile:
+        with torch.profiler.profile(
+            activities=[torch.profiler.ProfilerActivity.CPU],
+            record_shapes=True,
+            schedule=torch.profiler.schedule(
+                wait=int(args.num_iter/2),
+                warmup=2,
+                active=1,
+            ),
+            on_trace_ready=trace_handler,
+        ) as p:
+            args.p = p
+            inferer.infer(args=args)
+    else:
+        inferer.infer(args=args)
 
-    if save_txt or save_img:
-        LOGGER.info(f"Results saved to {save_dir}")
+    if args.save_txt or args.save_img:
+        LOGGER.info(f"Results saved to {args.save_dir}")
 
+def trace_handler(p):
+    output = p.key_averages().table(sort_by="self_cpu_time_total")
+    print(output)
+    import pathlib
+    timeline_dir = str(pathlib.Path.cwd()) + '/timeline/'
+    if not os.path.exists(timeline_dir):
+        try:
+            os.makedirs(timeline_dir)
+        except:
+            pass
+    timeline_file = timeline_dir + 'timeline-' + str(torch.backends.quantized.engine) + '-' + \
+                'Yolov6-' + str(p.step_num) + '-' + str(os.getpid()) + '.json'
+    p.export_chrome_trace(timeline_file)
 
 def main(args):
-    run(**vars(args))
+    if args.precision == "bfloat16":
+        with torch.cpu.amp.autocast(enabled=True, dtype=torch.bfloat16):
+            run(args=args)
+    elif args.precision == "float16":
+        with torch.cuda.amp.autocast(enabled=True, dtype=torch.float16):
+            run(args=args)
+    else:
+        run(args=args)
 
 
 if __name__ == "__main__":

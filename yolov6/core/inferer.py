@@ -64,13 +64,38 @@ class Inferer:
 
         LOGGER.info("Switch model to deploy modality.")
 
-    def infer(self, conf_thres, iou_thres, classes, agnostic_nms, max_det, save_dir, save_txt, save_img, hide_labels, hide_conf, view_img=True):
+    def infer(self, args=None):
         ''' Model Inference and results visualization '''
+        conf_thres = args.conf_thres
+        iou_thres = args.iou_thres
+        classes = args.classes
+        agnostic_nms = args.agnostic_nms
+        max_det = args.max_det
+        save_dir = args.save_dir
+        save_txt = args.save_txt
+        save_img = args.save_img
+        hide_labels = args.hide_labels
+        hide_conf = args.hide_conf
+        view_img = args.view_img
+
+        # model
+        self.model.eval()
+        if args.channels_last:
+            self.model = self.model.to(memory_format=torch.channels_last)
+            print("---- Use NHWC model")
+
         vid_path, vid_writer, windows = None, None, []
         fps_calculator = CalcFPS()
+        i = 0
         for img_src, img_path, vid_cap in tqdm(self.files):
+            if args.num_iter > 0 and i >= args.num_iter: break
             img, img_src = self.precess_image(img_src, self.img_size, self.stride, self.half)
             img = img.to(self.device)
+            if args.channels_last:
+                try:
+                    img = img.contiguous(memory_format=torch.channels_last)
+                except Exception as e:
+                    print(e)
             if len(img.shape) == 3:
                 img = img[None]
                 # expand for batch dim
@@ -78,6 +103,9 @@ class Inferer:
             pred_results = self.model(img)
             det = non_max_suppression(pred_results, conf_thres, iou_thres, classes, agnostic_nms, max_det=max_det)[0]
             t2 = time.time()
+            if args.profile:
+                args.p.step()
+            print("Iteration: {}, inference time: {} sec.".format(i, t2 - t1), flush=True)
 
             # Create output files in nested dirs that mirrors the structure of the images' dirs
             rel_path = osp.relpath(osp.dirname(img_path), osp.dirname(self.source))
@@ -110,8 +138,9 @@ class Inferer:
                 img_src = np.asarray(img_ori)
 
             # FPS counter
-            fps_calculator.update(1.0 / (t2 - t1))
-            avg_fps = fps_calculator.accumulate()
+            if i >= args.num_warmup:
+                fps_calculator.update(1.0 / (t2 - t1))
+                avg_fps = fps_calculator.accumulate()
 
             if self.files.type == 'video':
                 self.draw_text(
@@ -150,6 +179,10 @@ class Inferer:
                         save_path = str(Path(save_path).with_suffix('.mp4'))  # force *.mp4 suffix on results videos
                         vid_writer = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
                     vid_writer.write(img_src)
+            i += 1
+        # summary
+        print("\ninference Throughput: {} images/s".format(avg_fps))
+
 
     @staticmethod
     def precess_image(img_src, img_size, stride, half):

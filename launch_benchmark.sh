@@ -3,19 +3,6 @@ set -xe
 source common.sh
 
 function main {
-    # WORKSPACE
-    if [ "${WORKSPACE}" == "" ];then
-        WORKSPACE="${PWD}/logs"
-    fi
-    # extra env
-    if [ "${OOB_ADDITION_ENV}" != "" ];then
-        OOB_ADDITION_ENV_LIST=($(echo "${OOB_ADDITION_ENV}" |sed 's/,/ /g'))
-        for addition_env in ${OOB_ADDITION_ENV_LIST[@]}
-        do
-            export ${addition_env}
-        done
-    fi
-
     # set common info
     init_params $@
     fetch_device_info

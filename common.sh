@@ -1,6 +1,19 @@
 #!/bin/bash
 set -xe
 
+# WORKSPACE
+if [ "${WORKSPACE}" == "" ];then
+    WORKSPACE="${PWD}/logs"
+fi
+# extra env
+if [ "${OOB_ADDITION_ENV}" != "" ];then
+    OOB_ADDITION_ENV_LIST=($(echo "${OOB_ADDITION_ENV}" |sed 's/,/ /g'))
+    for addition_env in ${OOB_ADDITION_ENV_LIST[@]}
+    do
+        export ${addition_env}
+    done
+fi
+
 # env
 function set_environment {
     # requirements

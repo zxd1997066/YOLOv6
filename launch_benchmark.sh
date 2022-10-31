@@ -57,18 +57,19 @@ function main {
 
 # run
 function generate_core {
-    if [ "${device}" != "cuda" ];then
-        OOB_EXEC_HEADER=" numactl -m $(echo ${device_array[i]} |awk -F ';' '{print $2}') "
-        OOB_EXEC_HEADER+=" -C $(echo ${device_array[i]} |awk -F ';' '{print $1}') "
-    else
-        OOB_EXEC_HEADER=" CUDA_VISIBLE_DEVICES=${device_array[i]} "
-    fi
     # generate multiple instance script
     for(( i=0; i<instance; i++ ))
     do
         real_cores_per_instance=$(echo ${device_array[i]} |awk -F, '{print NF}')
         log_file="${log_dir}/rcpi${real_cores_per_instance}-ins${i}.log"
 
+        # instances
+        if [ "${device}" != "cuda" ];then
+            OOB_EXEC_HEADER=" numactl -m $(echo ${device_array[i]} |awk -F ';' '{print $2}') "
+            OOB_EXEC_HEADER+=" -C $(echo ${device_array[i]} |awk -F ';' '{print $1}') "
+        else
+            OOB_EXEC_HEADER=" CUDA_VISIBLE_DEVICES=${device_array[i]} "
+        fi
         printf " ${OOB_EXEC_HEADER} \
             python tools/infer.py --weights $CKPT_DIR \
                 --source $DATASET_DIR \

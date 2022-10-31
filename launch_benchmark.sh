@@ -38,10 +38,10 @@ function main {
             # clean workspace
             logs_path_clean
             # generate launch script for multiple instance
-            if [ "${OOB_USE_LAUNCHER}" != "1" ] && [ "${device}" != "cuda" ];then
-                generate_core
-            else
+            if [ "${OOB_USE_LAUNCHER}" == "1" ] && [ "${device}" != "cuda" ];then
                 generate_core_launcher
+            else
+                generate_core
             fi
             # launch
             echo -e "\n\n\n\n Running..."

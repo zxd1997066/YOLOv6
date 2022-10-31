@@ -137,9 +137,9 @@ function fetch_device_info {
         export OMP_NUM_THREADS=$(echo ${device_array[0]} |awk -F, '{printf("%d", NF)}')
     else
         if [ $(nvidia-smi -L |grep 'MIG' |wc -l) -ne 0 ];then
-            device_array=$(nvidia-smi -L |grep 'MIG' |sed 's/.*UUID: *//;s/).*//' |sed -n "${numa_nodes_use_}p")
+            device_array=($(nvidia-smi -L |grep 'MIG' |sed 's/.*UUID: *//;s/).*//' |sed -n "${numa_nodes_use_}p"))
         else
-            device_array=$(nvidia-smi -L |grep 'NVIDIA' |sed 's/.*UUID: *//;s/).*//' |sed -n "${numa_nodes_use_}p")
+            device_array=($(nvidia-smi -L |grep 'NVIDIA' |sed 's/.*UUID: *//;s/).*//' |sed -n "${numa_nodes_use_}p"))
         fi
     fi
     instance=${#device_array[@]}

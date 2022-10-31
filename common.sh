@@ -231,6 +231,3 @@ function init_params {
         unset DNNL_VERBOSE MKLDNN_VERBOSE
     fi
 }
-
-# Start
-main "$@"

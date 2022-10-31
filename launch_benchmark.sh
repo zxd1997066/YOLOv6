@@ -116,3 +116,7 @@ function generate_core_launcher {
     # download launcher
     wget --no-proxy -O launch.py http://mengfeil-ubuntu.sh.intel.com/share/launch.py
 }
+
+
+# Start
+main "$@"

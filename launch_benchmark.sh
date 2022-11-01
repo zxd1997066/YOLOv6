@@ -109,8 +109,8 @@ function generate_core_launcher {
 }
 
 # download common files
-wget --no-proxy -O common.sh http://mengfeil-ubuntu.sh.intel.com/share/common.sh
-wget --no-proxy -O launch.py http://mengfeil-ubuntu.sh.intel.com/share/launch.py
+wget -q -O common.sh https://raw.githubusercontent.com/mengfei25/oob-common/main/common.sh
+wget -q -O launch.py https://raw.githubusercontent.com/mengfei25/oob-common/main/launch.py
 
 # Start
 main "$@"

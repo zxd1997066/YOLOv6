@@ -1,9 +1,9 @@
 #!/bin/bash
 set -xe
-source common.sh
 
 function main {
     # set common info
+    source common.sh
     init_params $@
     fetch_device_info
     set_environment
@@ -106,10 +106,11 @@ function generate_core_launcher {
         break
     done
     echo -e "\n wait" >> ${excute_cmd_file}
-    # download launcher
-    wget --no-proxy -O launch.py http://mengfeil-ubuntu.sh.intel.com/share/launch.py
 }
 
+# download common files
+wget --no-proxy -O common.sh http://mengfeil-ubuntu.sh.intel.com/share/common.sh
+wget --no-proxy -O launch.py http://mengfeil-ubuntu.sh.intel.com/share/launch.py
 
 # Start
 main "$@"

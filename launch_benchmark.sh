@@ -27,7 +27,12 @@ function main {
     for model_name in ${model_name_list[@]}
     do
         # cache
-        python tools/infer.py --weights $CKPT_DIR \
+        if [ "${device}" != "cuda" ];then
+            device_id='cpu'
+        else
+            device_id=$(nvidia-smi -L | grep "$CUDA_VISIBLE_DEVICES" -B 50 |grep '^GPU' |tail -1 |sed 's/:.*//;s/[^0-9]//g')
+        fi
+        python tools/infer.py --device $device_id --weights $CKPT_DIR \
             --source $DATASET_DIR \
             --num_iter 3 --num_warmup 1 \
             --channels_last $channels_last --precision $precision \
@@ -69,9 +74,10 @@ function generate_core {
             OOB_EXEC_HEADER+=" -C $(echo ${device_array[i]} |awk -F ';' '{print $1}') "
         else
             OOB_EXEC_HEADER=" CUDA_VISIBLE_DEVICES=${device_array[i]} "
+            device_id=$(nvidia-smi -L | grep "$CUDA_VISIBLE_DEVICES" -B 50 |grep '^GPU' |tail -1 |sed 's/:.*//;s/[^0-9]//g')
         fi
         printf " ${OOB_EXEC_HEADER} \
-            python tools/infer.py --weights $CKPT_DIR \
+            python tools/infer.py --device $device_id --weights $CKPT_DIR \
                 --source $DATASET_DIR \
                 --num_iter $num_iter --num_warmup $num_warmup \
                 --channels_last $channels_last --precision $precision \
@@ -97,7 +103,7 @@ function generate_core_launcher {
                     --log_path ${log_dir} \
                     --ninstances ${#device_array[@]} \
                     --ncore_per_instance ${real_cores_per_instance} \
-            tools/infer.py --weights $CKPT_DIR \
+            tools/infer.py --device cpu --weights $CKPT_DIR \
                 --source $DATASET_DIR \
                 --num_iter $num_iter --num_warmup $num_warmup \
                 --channels_last $channels_last --precision $precision \

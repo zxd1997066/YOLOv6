@@ -88,8 +88,9 @@ def run(args=None):
     # Inference
     inferer = Inferer(args.source, args.weights, args.device, args.yaml, args.img_size, args.half)
     if args.profile:
+        prof_act = [torch.profiler.ProfilerActivity.CUDA, torch.profiler.ProfilerActivity.CPU]
         with torch.profiler.profile(
-            activities=[torch.profiler.ProfilerActivity.CPU],
+            activities=prof_act,
             record_shapes=True,
             schedule=torch.profiler.schedule(
                 wait=int(args.num_iter/2),

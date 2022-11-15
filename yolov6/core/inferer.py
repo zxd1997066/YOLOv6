@@ -102,6 +102,7 @@ class Inferer:
             t1 = time.time()
             pred_results = self.model(img)
             det = non_max_suppression(pred_results, conf_thres, iou_thres, classes, agnostic_nms, max_det=max_det)[0]
+            if torch.cuda.is_available(): torch.cuda.synchronize()
             t2 = time.time()
             if args.profile:
                 args.p.step()

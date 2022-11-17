@@ -352,7 +352,7 @@ class DetectBackend(nn.Module):
         super().__init__()
         assert isinstance(weights, str) and Path(weights).suffix == '.pt', f'{Path(weights).suffix} format is not supported.'
         from yolov6.utils.checkpoint import load_checkpoint
-        model = load_checkpoint(weights, map_location=device)
+        model = load_checkpoint(weights, map_location='cpu').to(device)
         stride = int(model.stride.max())
         self.__dict__.update(locals())  # assign all variables to self
 

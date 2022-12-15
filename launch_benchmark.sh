@@ -115,8 +115,7 @@ function generate_core_launcher {
 }
 
 # download common files
-wget -q --no-check-certificate -O common.sh https://raw.githubusercontent.com/mengfei25/oob-common/main/common.sh
-wget -q --no-check-certificate -O launch.py https://raw.githubusercontent.com/mengfei25/oob-common/main/launch.py
+rm -rf oob-common && git clone https://github.com/intel-sandbox/oob-common.git
 
 # Start
 main "$@"

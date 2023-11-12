@@ -42,6 +42,10 @@ def get_args_parser(add_help=True):
     parser.add_argument('--profile', action='store_true', default=False, help='collect timeline')
     parser.add_argument('--num_iter', default=1, type=int, help='test iterations')
     parser.add_argument('--num_warmup', default=0, type=int, help='test warmup')
+    parser.add_argument("--compile", action='store_true', default=False,
+                    help="enable torch.compile")
+    parser.add_argument("--backend", type=str, default='inductor',
+                    help="enable torch.compile backend")
     args = parser.parse_args()
     LOGGER.info(args)
     return args

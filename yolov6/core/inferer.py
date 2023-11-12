@@ -80,6 +80,8 @@ class Inferer:
 
         # model
         self.model.eval()
+        if args.compile:
+            self.model = torch.compile(self.model, backend=args.backend, options={"freezing": True})
         if args.channels_last:
             self.model = self.model.to(memory_format=torch.channels_last)
             print("---- Use NHWC model")

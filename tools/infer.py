@@ -128,11 +128,11 @@ def trace_handler(p):
 def main(args):
     if args.precision == "bfloat16":
         print("---- Use cpu AMP bfloat16")
-        with torch.cpu.amp.autocast(enabled=True, dtype=torch.bfloat16):
+        with torch.autocast(device_type="cuda" if torch.cuda.is_available() else "cpu", enabled=True, dtype=torch.bfloat16):
             run(args=args)
     elif args.precision == "float16":
         print("---- Use cuda AMP float16")
-        with torch.cpu.amp.autocast(enabled=True, dtype=torch.half):
+        with torch.autocast(device_type="cuda" if torch.cuda.is_available() else "cpu", enabled=True, dtype=torch.half):
             run(args=args)
     else:
         run(args=args)

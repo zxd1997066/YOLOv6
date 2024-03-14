@@ -36,7 +36,7 @@ def get_args_parser(add_help=True):
     parser.add_argument('--hide-labels', default=False, action='store_true', help='hide labels.')
     parser.add_argument('--hide-conf', default=False, action='store_true', help='hide confidences.')
     parser.add_argument('--half', action='store_true', help='whether to use FP16 half-precision inference.')
-    # parser.add_argument('--batch_size', default=1, type=int, help='batch size')
+    parser.add_argument('--batch_size', default=1, type=int, help='batch size')
     parser.add_argument('--precision', default="float32", type=str, help='precision')
     parser.add_argument('--channels_last', default=1, type=int, help='Use NHWC or not')
     parser.add_argument('--profile', action='store_true', default=False, help='collect timeline')

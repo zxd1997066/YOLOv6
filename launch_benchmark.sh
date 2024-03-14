@@ -43,6 +43,9 @@ function main {
         #
         for batch_size in ${batch_size_list[@]}
         do
+            if [ $batch_size -le 0 ];then
+                batch_size=128
+            fi
             # clean workspace
             logs_path_clean
             # generate launch script for multiple instance
@@ -82,7 +85,7 @@ function generate_core {
         printf " ${OOB_EXEC_HEADER} \
             python tools/infer.py --device $device_id --weights $CKPT_DIR \
                 --source $DATASET_DIR \
-                --num_iter $num_iter --num_warmup $num_warmup \
+                --num_iter $num_iter --num_warmup $num_warmup --batch_size $batch_size \
                 --channels_last $channels_last --precision $precision \
                 ${addtion_options} \
         > ${log_file} 2>&1 &  \n" |tee -a ${excute_cmd_file}
@@ -108,7 +111,7 @@ function generate_core_launcher {
                     --ncore_per_instance ${real_cores_per_instance} \
             tools/infer.py --device cpu --weights $CKPT_DIR \
                 --source $DATASET_DIR \
-                --num_iter $num_iter --num_warmup $num_warmup \
+                --num_iter $num_iter --num_warmup $num_warmup --batch_size $batch_size \
                 --channels_last $channels_last --precision $precision \
                 ${addtion_options} \
         > /dev/null 2>&1 &  \n" |tee -a ${excute_cmd_file}
